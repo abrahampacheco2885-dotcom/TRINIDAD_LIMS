@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Usuarios</h3>
+    <a href="{{ url_for('auth.users_create') }}" class="btn btn-primary">Nuevo Usuario</a>
+  </div>
+  <table class="table table-striped">
+    <thead>
+      <tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Activo</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ u.nombre_completo or '-' }}</td>
+        <td>{{ u.email or '-' }}</td>
+        <td>{{ u.rol }}</td>
+        <td>{{ 'Sí' if u.activo else 'No' }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('auth.users_delete', id=u.id) }}" onsubmit="return confirm('Borrar usuario?');">
+            <button class="btn btn-sm btn-danger">Borrar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

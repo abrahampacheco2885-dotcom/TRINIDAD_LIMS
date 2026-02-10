@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-body">
+        <h2 class="mb-4">Muestras en Proceso</h2>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID Muestra</th>
+                        <th>Paciente</th>
+                        <th>Tipo</th>
+                        <th>Fecha Entrada</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in samples %}
+                    <tr>
+                        <td><code>{{ s.codigo_unico }}</code></td>
+                        <td>{{ s.paciente.nombre }} {{ s.paciente.apellido }}</td>
+                        <td>{{ s.tipo_muestra }}</td>
+                        <td>{{ s.fecha_recepcion.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            <span class="badge {% if s.estado == 'Pendiente' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                {{ s.estado }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('analysis.detalle_muestra', muestra_id=s.id) }}" class="btn btn-sm btn-info">
+                                <i class="bi bi-flask"></i> Analizar
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No hay muestras registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

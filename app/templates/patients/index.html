@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1">Listado de Pacientes</h2>
+        <p class="text-muted">Gestione la base de datos de pacientes y registros médicos.</p>
+    </div>
+        <div class="col-auto">
+        <a href="{{ url_for('patients.nuevo_paciente') }}" class="btn btn-primary shadow">
+            <i class="bi bi-person-plus-fill me-2"></i> Nuevo Paciente
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3 text-uppercase fs-xs fw-bold text-muted">Identificación</th>
+                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Nombre Completo</th>
+                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Correo Electrónico</th>
+                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in patients %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-bold text-primary">{{ p.identificacion }}</span>
+                        </td>
+                        <td class="fw-semibold text-dark">{{ p.nombre }} {{ p.apellido }}</td>
+                        <td>{{ p.email if p.email else '---' }}</td>
+                        <td class="text-center py-3">
+                            <a href="{{ url_for('samples.create', paciente_id=p.id) }}" class="btn btn-sm btn-outline-primary me-2">
+                                <i class="bi bi-plus-circle me-1"></i> Muestra
+                            </a>
+                            <button class="btn btn-sm btn-light border">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="bi bi-people fs-1 text-light d-block mb-3"></i>
+                            <p class="text-muted">No hay pacientes registrados actualmente.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-vial"></i> Registrar Recepción de Muestra</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Paciente:</strong> {{ paciente.nombre }} {{ paciente.apellido }} <br>
+                    <strong>ID:</strong> {{ paciente.identificacion }}
+                </div>
+
+                                <form method="POST">
+                                        {% with messages = get_flashed_messages(with_categories=true) %}
+                                            {% if messages %}
+                                                <div class="mb-3">
+                                                    {% for cat, msg in messages %}
+                                                        <div class="alert alert-{{ 'danger' if cat=='danger' else 'success' }}">{{ msg }}</div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                                <div class="mb-4">
+                                                <label class="form-label fw-bold">Tipo de Muestra</label>
+                                                <select name="tipo_muestra" class="form-select form-select-lg" required>
+                                                        {% for val, label in form.tipo_muestra.choices %}
+                                                            <option value="{{ val }}" {% if form.tipo_muestra.data==val %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                </select>
+                        <div class="form-text">Asegúrese de que el envase esté correctamente etiquetado antes de guardar.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Confirmar Recepción
+                        </button>
+                        <a href="{{ url_for('patients.lista_pacientes') }}" class="btn btn-light">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-muted text-center">
+                Laboratory Information Management System TRINIDAD - Módulo de Pre-Analítica
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Pacientes - Laboratory Information Management System Trinidad</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f7f6; }
+        .card-table { border-radius: 15px; border: none; }
+        .table thead { background-color: #0d6efd; color: white; }
+        .btn-action { border-radius: 8px; font-weight: 500; }
+        .badge-id { font-family: monospace; font-size: 0.9rem; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-sm mb-2">
+                    <i class="bi bi-house-door"></i> Volver al Inicio
+                </a>
+                <h2 class="fw-bold text-dark">Base de Datos de Pacientes</h2>
+            </div>
+            <a href="{{ url_for('patients.nuevo_paciente') }}" class="btn btn-primary shadow-sm btn-lg">
+                <i class="bi bi-person-plus-fill"></i> Registrar Nuevo
+            </a>
+            <div class="d-flex">
+                <form class="me-3" method="GET" action="{{ url_for('patients.lista_pacientes') }}">
+                    <div class="input-group">
+                        <input type="text" name="q" value="{{ q or '' }}" class="form-control" placeholder="Buscar por nombre, apellido o cédula">
+                        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
+                    </div>
+                </form>
+                <a href="{{ url_for('patients.nuevo_paciente') }}" class="btn btn-primary shadow-sm btn-lg">
+                    <i class="bi bi-person-plus-fill"></i> Registrar Nuevo
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-table shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Identificación</th>
+                                <th>Nombre Completo</th>
+                                <th>Género</th>
+                                <th>Edad</th>
+                                <th>Teléfono</th>
+                                <th class="text-center">Acciones del Módulo</th>
+                            </tr>
+                        </thead>
+
+            <!-- Paginación limitada a 5 botones -->
+            {% if pagination and pagination.pages > 1 %}
+            {% set total = pagination.pages %}
+            {% set current = pagination.page %}
+            {% set window = 5 %}
+            {% set half = (window // 2) %}
+            {% set start = current - half if (current - half) > 1 else 1 %}
+            {% set end = start + window - 1 if (start + window -1) <= total else total %}
+            {% if (end - start + 1) < window %}
+                {% set start = end - window + 1 if (end - window + 1) > 1 else 1 %}
+            {% endif %}
+            <nav aria-label="Paginación pacientes" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="?page={{ pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}" aria-label="Anterior">&laquo; Anterior</a>
+                    </li>
+
+                    {% if start > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if q %}&q={{ q }}{% endif %}">1</a>
+                        </li>
+                        {% if start > 2 %}
+                            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                        {% endif %}
+                    {% endif %}
+
+                    {% for pagenum in range(start, end + 1) %}
+                        <li class="page-item {% if pagenum == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="?page={{ pagenum }}{% if q %}&q={{ q }}{% endif %}">{{ pagenum }}</a>
+                        </li>
+                    {% endfor %}
+
+                    {% if end < total %}
+                        {% if end < total - 1 %}
+                            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                        {% endif %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ total }}{% if q %}&q={{ q }}{% endif %}">{{ total }}</a>
+                        </li>
+                    {% endif %}
+
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="?page={{ pagination.next_num }}{% if q %}&q={{ q }}{% endif %}" aria-label="Siguiente">Siguiente &raquo;</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+                                <th>Teléfono</th>
+                                <th class="text-center">Acciones del Módulo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in pacientes %}
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="badge bg-light text-dark border badge-id">
+                                        {{ p.tipo_documento }}-{{ p.identificacion }}
+                                    </span>
+                                </td>
+                                <td class="fw-bold text-uppercase">{{ p.nombre }} {{ p.apellido }}</td>
+                                <td>
+                                    {% if p.genero == 'Masculino' %}
+                                        <i class="bi bi-gender-male text-primary"></i> M
+                                    {% elif p.genero == 'Femenino' %}
+                                        <i class="bi bi-gender-female text-danger"></i> F
+                                    {% else %}
+                                        <i class="bi bi-person-fill text-info"></i> N
+                                    {% endif %}
+                                    {% if p.anulado %}
+                                        <div><span class="badge bg-danger ms-2">ANULADO</span></div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ p.get_edad() }} años</td>
+                                <td class="text-muted small">{{ p.telefono if p.telefono else 'N/A' }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('patients.crear_orden', patient_id=p.id) }}" 
+                                           class="btn btn-outline-primary btn-sm btn-action me-2" title="Crear Orden / Asignar Exámenes">
+                                            <i class="bi bi-clipboard2-plus"></i> Crear Orden
+                                        </a>
+
+                                        {% if p.muestras %}
+                                            <a href="{{ url_for('analysis.detalle_muestra', muestra_id=p.muestras[-1].id) }}" 
+                                               class="btn btn-success btn-sm btn-action" title="Cargar Resultados">
+                                                <i class="bi bi-eyedropper"></i> Analizar
+                                            </a>
+                                        {% else %}
+                                            <button class="btn btn-light btn-sm text-muted" disabled>
+                                                <i class="bi bi-flask"></i> Sin Orden
+                                            </button>
+                                        {% endif %}
+                                        {% if not p.anulado %}
+                                        <form method="POST" action="{{ url_for('patients.anular_paciente', patient_id=p.id) }}" style="display:inline; margin-left:8px;">
+                                            {{ csrf_token() }}
+                                            <button class="btn btn-warning btn-sm btn-action" onclick="return confirm('Anular paciente? Esto no borrará datos.')">Anular</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <i class="bi bi-people text-muted display-1"></i>
+                                    <p class="mt-3 text-muted">No hay pacientes registrados en el sistema.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-4 text-center">
+            <p class="text-muted small">Laboratory Information Management System - Filtros de búsqueda próximamente.</p>
+        </footer>
+    </div>
+
+</body>
+</html>

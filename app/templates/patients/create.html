@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - Laboratory Information Management System Trinidad</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light p-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h4 class="mb-0"><i class="bi bi-person-plus-fill"></i> Registrar Nuevo Paciente</h4>
+                    </div>
+                    <div class="card-body p-4">
+                                                <form method="POST">
+                                                        {% with messages = get_flashed_messages(with_categories=true) %}
+                                                            {% if messages %}
+                                                                <div class="mb-3">
+                                                                    {% for cat, msg in messages %}
+                                                                        <div class="alert alert-{{ 'danger' if cat=='danger' else 'success' }}">{{ msg }}</div>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            {% endif %}
+                                                        {% endwith %}
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Tipo Doc.</label>
+                                                                        <select name="tipo_documento" class="form-select" required>
+                                                                                {% for val, label in form.tipo_documento.choices %}
+                                                                                    <option value="{{ val }}" {% if form.tipo_documento.data==val %}selected{% endif %}>{{ label }}</option>
+                                                                                {% endfor %}
+                                                                        </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold">Número de Identidad / Cédula</label>
+                                    <input type="text" name="dni" value="{{ form.dni.data or '' }}" class="form-control" placeholder="Dejar vacío para N o RN si no aplica">
+                                    <small class="text-muted text-danger">*Si es N o RN se autogenera con el apellido.</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Género</label>
+                                                                        <select name="genero" class="form-select" required>
+                                                                                {% for val, label in form.genero.choices %}
+                                                                                    <option value="{{ val }}" {% if form.genero.data==val %}selected{% endif %}>{{ label }}</option>
+                                                                                {% endfor %}
+                                                                        </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Nombres</label>
+                                    <input type="text" name="nombre" value="{{ form.nombre.data or '' }}" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Apellidos</label>
+                                    <input type="text" name="apellido" value="{{ form.apellido.data or '' }}" class="form-control" required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Fecha de Nacimiento</label>
+                                    <input type="date" name="fecha_nacimiento" value="{{ form.fecha_nacimiento.data or '' }}" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Teléfono</label>
+                                    <input type="text" name="telefono" value="{{ form.telefono.data or '' }}" class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Correo</label>
+                                    <input type="email" name="email" value="{{ form.email.data or '' }}" class="form-control">
+                                </div>
+                            </div>
+                            <hr class="my-4">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="/patients/lista" class="btn btn-outline-secondary px-4">Cancelar</a>
+                                <button type="submit" class="btn btn-success px-5">Guardar Paciente</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
