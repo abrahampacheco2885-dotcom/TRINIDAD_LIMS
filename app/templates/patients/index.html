@@ -1,53 +1,49 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Pacientes - Trinidad LIMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
 
-{% block content %}
-<div class="row mb-4 align-items-center">
-    <div class="col">
-        <h2 class="fw-bold text-dark mb-1">Listado de Pacientes</h2>
-        <p class="text-muted">Gestione la base de datos de pacientes y registros médicos.</p>
+<nav class="navbar navbar-dark bg-primary mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/">⬅ Volver al Dashboard</a>
     </div>
-        <div class="col-auto">
-        <a href="{{ url_for('patients.nuevo_paciente') }}" class="btn btn-primary shadow">
-            <i class="bi bi-person-plus-fill me-2"></i> Nuevo Paciente
-        </a>
-    </div>
-</div>
+</nav>
 
-<div class="card shadow-custom">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="bg-light">
+<div class="container">
+    <div class="card shadow border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h4 class="m-0 fw-bold">Listado de Pacientes</h4>
+            <button class="btn btn-primary">+ Agregar Paciente</button>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead class="table-light">
                     <tr>
-                        <th class="ps-4 py-3 text-uppercase fs-xs fw-bold text-muted">Identificación</th>
-                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Nombre Completo</th>
-                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted">Correo Electrónico</th>
-                        <th class="py-3 text-uppercase fs-xs fw-bold text-muted text-center">Acciones</th>
+                        <th>Identificación</th>
+                        <th>Nombre Completo</th>
+                        <th>Edad</th>
+                        <th>Teléfono</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in patients %}
                     <tr>
-                        <td class="ps-4">
-                            <span class="fw-bold text-primary">{{ p.identificacion }}</span>
-                        </td>
-                        <td class="fw-semibold text-dark">{{ p.nombre }} {{ p.apellido }}</td>
-                        <td>{{ p.email if p.email else '---' }}</td>
-                        <td class="text-center py-3">
-                            <a href="{{ url_for('samples.create', paciente_id=p.id) }}" class="btn btn-sm btn-outline-primary me-2">
-                                <i class="bi bi-plus-circle me-1"></i> Muestra
-                            </a>
-                            <button class="btn btn-sm btn-light border">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
+                        <td>{{ p.identificacion }}</td>
+                        <td>{{ p.nombre }} {{ p.apellido }}</td>
+                        <td>{{ p.get_edad() }} años</td>
+                        <td>{{ p.telefono or 'S/N' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info">Ver</button>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="text-center py-5">
-                            <i class="bi bi-people fs-1 text-light d-block mb-3"></i>
-                            <p class="text-muted">No hay pacientes registrados actualmente.</p>
-                        </td>
+                        <td colspan="5" class="text-center py-4 text-muted">No hay pacientes registrados en el sistema.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -55,4 +51,6 @@
         </div>
     </div>
 </div>
-{% endblock %}
+
+</body>
+</html>

@@ -5,49 +5,56 @@ from config import Config
 from flask_migrate import Migrate
 from flask_wtf import CSRFProtect
 
+# Estas herramientas se quedan igual
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-
 def create_app():
     app = Flask(__name__)
-    # Load configuration from config.Config (which reads .env)
+    # Carga la configuración (Base de datos, llaves secretas, etc.)
     app.config.from_object(Config)
 
     db.init_app(app)
-    # Initialize Flask-Migrate so Alembic can access the app's metadata/engine
     migrate = Migrate(app, db)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    # Enable CSRF protection and make `csrf_token()` available in templates
+    
     csrf = CSRFProtect()
     csrf.init_app(app)
 
     @login_manager.user_loader
     def load_user(user_id):
+        # Importamos User desde la carpeta app.models
         from app.models import User
         return User.query.get(int(user_id))
 
+    # --- AQUÍ ESTÁ EL CAMBIO PARA HACERLO FUNCIONAL ---
     @app.route('/')
     def index():
-        return render_template('index.html')
+        # Importamos tus modelos para poder contar los datos
+        from app.models import Patient, Muestra, SolicitudTest
+        
+        # Contamos cuántos registros hay en cada tabla
+        total_p = Patient.query.count()
+        total_m = Muestra.query.count()
+        # Contamos solo las pruebas que digan 'PENDIENTE'
+        total_pendientes = SolicitudTest.query.filter_by(estado='PENDIENTE').count()
+        
+        # Le enviamos estos números a la página index.html
+        return render_template('index.html', 
+                               pacientes=total_p, 
+                               muestras=total_m, 
+                               pendientes=total_pendientes)
 
-    # Registro de Blueprints
+    # Registro de Blueprints (Tus módulos actuales)
     from app.patients import patients_bp
     from app.analysis import analysis_bp
-    from app.auth import auth_bp # Importamos el objeto blueprint ya definido
+    from app.auth import auth_bp
     from app.samples import bp as samples_bp
 
     app.register_blueprint(patients_bp)
     app.register_blueprint(analysis_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(samples_bp)
-
-    # Do not call db.create_all() here; use Alembic/Flask-Migrate to manage schema.
-    # If you need a quick local DB during development, run a small script or enable
-    # a dedicated config flag — but avoid calling create_all() during migrations.
-    # with app.app_context():
-    #     from app import models
-    #     db.create_all()
 
     return app

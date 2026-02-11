@@ -1,90 +1,86 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-4">
-        <div class="card shadow mb-4">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información de Muestra</h5>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Paciente:</strong><br>{{ muestra.paciente.nombre }} {{ muestra.paciente.apellido }}</p>
+                    <p><strong>Cédula:</strong> {{ muestra.paciente.identificacion }}</p>
+                    <p><strong>Código Muestra:</strong> <span class="badge bg-secondary">{{ muestra.codigo_unico }}</span></p>
+                    <p><strong>Tipo:</strong> {{ muestra.tipo_muestra }}</p>
+                    <hr>
+                    
+                    <form action="{{ url_for('analysis.asignar_test', muestra_id=muestra.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label class="form-label fw-bold small">Añadir Examen:</label>
+                        <div class="input-group">
+                            <select name="test_id" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>-- Seleccione --</option>
+                                {% for t in tests %}
+                                <option value="{{ t.id }}">{{ t.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-sm">Ok</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="card-body">
-                <p><strong>Código Único:</strong> <span class="badge bg-secondary">{{ muestra.codigo_unico }}</span></p>
-                <p><strong>Paciente:</strong> {{ muestra.paciente.nombre }} {{ muestra.paciente.apellido }}</p>
-                <p><strong>Tipo de Muestra:</strong> {{ muestra.tipo_muestra }}</p>
-                <p><strong>Fecha Recepción:</strong> {{ muestra.fecha_recepcion.strftime('%d/%m/%Y %H:%M') }}</p>
-                <hr>
-                
-                <form action="{{ url_for('analysis.asignar_test', muestra_id=muestra.id) }}" method="POST">
-                    <label class="form-label fw-bold">Asignar Nuevo Examen:</label>
-                    <select name="test_id" class="form-select mb-3" required>
-                        <option value="" disabled selected>-- Seleccione Test --</option>
-                        {% for t in tests %}
-                        <option value="{{ t.id }}">{{ t.nombre }} ({{ t.codigo }})</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-plus-circle"></i> Agregar al Listado
-                    </button>
-                </form>
-            </div>
+            <a href="{{ url_for('analysis.pendientes') }}" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-arrow-left"></i> Volver a Pendientes
+            </a>
         </div>
-        <a href="{{ url_for('samples.index') }}" class="btn btn-outline-secondary w-100">
-            <i class="bi bi-arrow-left"></i> Volver a Muestras
-        </a>
-    </div>
 
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-list-check"></i> Panel de Resultados</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Examen / Parámetro</th>
-                                <th style="width: 200px;">Resultado</th>
-                                <th>Unidad</th>
-                                <th>Estado</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for sol in muestra.solicitudes %}
-                            <tr>
-                                <td><strong>{{ sol.test.nombre }}</strong></td>
-                                <form action="{{ url_for('analysis.cargar_resultado', solicitud_id=sol.id) }}" method="POST">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Carga de Resultados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Examen</th>
+                                    <th style="width: 180px;">Resultado</th>
+                                    <th>Unidad</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sol in muestra.solicitudes %}
+                                <tr>
+                                    <td><strong>{{ sol.test.nombre }}</strong></td>
                                     <td>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" step="0.01" name="valor" class="form-control" 
-                                                   value="{{ sol.resultado.valor_resultado if sol.resultado else '' }}" required>
-                                        </div>
+                                        <form action="{{ url_for('analysis.cargar_resultado', solicitud_id=sol.id) }}" method="POST" class="d-flex">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="number" step="0.01" name="valor" 
+                                                   class="form-control form-control-sm me-2" 
+                                                   value="{{ sol.resultado.valor_resultado if sol.resultado else '' }}" 
+                                                   placeholder="0.00" required>
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-save"></i>
+                                            </button>
+                                        </form>
                                     </td>
                                     <td><small class="text-muted">{{ sol.test.unidad_medida }}</small></td>
                                     <td>
                                         {% if sol.estado == 'PENDIENTE' %}
-                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                            <span class="badge bg-warning text-dark small">PENDIENTE</span>
                                         {% else %}
-                                        <span class="badge bg-success">Ingresado</span>
+                                            <span class="badge bg-success small">INGRESADO</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <button type="submit" class="btn btn-sm btn-success">
-                                            <i class="bi bi-save"></i>
-                                        </button>
-                                    </td>
-                                </form>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    No hay exámenes asignados a esta muestra todavía.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
