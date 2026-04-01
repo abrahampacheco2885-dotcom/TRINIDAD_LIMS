@@ -12,10 +12,10 @@ with app.app_context():
     if not admin_existe:
         nuevo_admin = Usuario(
             username='admin',
-            nombre='Director',
-            apellido='Trinidad',
-            email='admin@trinidad.com',
-            password_hash=generate_password_hash('TU_CONTRASEÑA'), # <-- PON TU CLAVE AQUÍ
+            nombre='Abraham',
+            apellido='Pacheco',
+            email='abrahampacheco@gmail.com',
+            password_hash=generate_password_hash('Trinidad2026Apache'), # <-- PON TU CLAVE AQUÍ
             rol='admin'
         )
         db.session.add(nuevo_admin)
