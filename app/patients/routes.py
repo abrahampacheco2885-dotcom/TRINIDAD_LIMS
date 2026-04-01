@@ -2,14 +2,13 @@ from flask import render_template, request, redirect, url_for, flash
 from app.patients import patients_bp
 from app.models import Patient, Muestra, SolicitudTest, TestCatalogo
 from app import db
-import os # <--- ASEGÚRATE DE QUE ESTÉ ESTA LÍNEA
-from datetime import datetime
-from app.sheets_service import enviar_a_sheets
 from app.utils.decorators import roles_required
 from datetime import datetime
 from app.forms import PatientForm
+from app.sheets_service import enviar_a_sheets # Importación del puente a Google
+import os
 
-# 1. RUTA PARA REGISTRAR (La que te está dando el error)
+# 1. RUTA PARA REGISTRAR
 @patients_bp.route('/nuevo', methods=['GET', 'POST'])
 def nuevo_paciente():
     form = PatientForm()
@@ -43,18 +42,31 @@ def nuevo_paciente():
             try:
                 db.session.add(nuevo)
                 db.session.commit()
-                                
-                # --- SOLO ESTA LÍNEA NUEVA ---
-                enviar_a_sheets(nuevo.__dict__, tipo="paciente") 
+                
+                # --- ENVÍO A GOOGLE SHEETS ---
+                try:
+                    dict_google = {
+                        "tipo": "paciente",
+                        "tipo_documento": nuevo.tipo_documento,
+                        "identificacion": nuevo.identificacion,
+                        "nombre": nuevo.nombre,
+                        "apellido": nuevo.apellido,
+                        "genero": nuevo.genero,
+                        "fecha_nacimiento": str(nuevo.fecha_nacimiento),
+                        "telefono": nuevo.telefono,
+                        "email": nuevo.email
+                    }
+                    enviar_a_sheets(dict_google, tipo="paciente")
+                except Exception as e_sheets:
+                    print(f"Error en Google Sheets: {e_sheets}")
                 # -----------------------------
 
-               flash('Paciente creado correctamente.', 'success')
+                flash('Paciente creado correctamente.', 'success')
                 return redirect(url_for('patients.lista_pacientes'))
             except Exception as e:
                 db.session.rollback()
                 flash('Error al crear paciente: ' + str(e), 'danger')
         else:
-            # Collect form errors to show in template
             for field, errs in form.errors.items():
                 for err in errs:
                     flash(f"{field}: {err}", 'danger')
@@ -90,7 +102,7 @@ def lista_pacientes():
     pacientes = pagination.items
     return render_template('patients/list.html', pacientes=pacientes, pagination=pagination, q=q)
 
-# 3. RUTA PARA CREAR LA ORDEN (Seleccionar exámenes)
+# 3. RUTA PARA CREAR LA ORDEN
 @patients_bp.route('/crear_orden/<int:patient_id>', methods=['GET', 'POST'])
 def crear_orden(patient_id):
     paciente = Patient.query.get_or_404(patient_id)
@@ -112,6 +124,19 @@ def crear_orden(patient_id):
             db.session.add(nueva_solicitud)
 
         db.session.commit()
+        
+        # Opcional: Enviar también la orden a Google Sheets
+        try:
+            dict_orden = {
+                "tipo": "orden",
+                "identificacion": paciente.identificacion,
+                "nombre_completo": f"{paciente.nombre} {paciente.apellido}",
+                "examenes": ", ".join(tests_seleccionados)
+            }
+            enviar_a_sheets(dict_orden, tipo="orden")
+        except:
+            pass
+
         return redirect(url_for('patients.lista_pacientes'))
 
     return render_template('patients/crear_orden.html', paciente=paciente, examenes=examenes_disponibles)
