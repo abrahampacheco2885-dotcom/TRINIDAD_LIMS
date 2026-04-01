@@ -16,6 +16,7 @@
                     </div>
                     <div class="card-body p-4">
                                                 <form method="POST">
+                                                    {{ form.hidden_tag() }}
                                                         {% with messages = get_flashed_messages(with_categories=true) %}
                                                             {% if messages %}
                                                                 <div class="mb-3">
