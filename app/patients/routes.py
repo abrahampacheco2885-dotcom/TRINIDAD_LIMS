@@ -2,6 +2,8 @@ from flask import render_template, request, redirect, url_for, flash
 from app.patients import patients_bp
 from app.models import Patient, Muestra, SolicitudTest, TestCatalogo
 from app import db
+import os # <--- ASEGÚRATE DE QUE ESTÉ ESTA LÍNEA
+from datetime import datetime
 from app.sheets_service import enviar_a_sheets
 from app.utils.decorators import roles_required
 from datetime import datetime
