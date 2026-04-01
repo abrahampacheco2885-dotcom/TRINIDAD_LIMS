@@ -41,10 +41,7 @@ def nuevo_paciente():
             try:
                 db.session.add(nuevo)
                 db.session.commit()
-                try:
-                db.session.add(nuevo)
-                db.session.commit()
-                
+                                
                 # --- SOLO ESTA LÍNEA NUEVA ---
                 enviar_a_sheets(nuevo.__dict__, tipo="paciente") 
                 # -----------------------------
