@@ -16,8 +16,7 @@
                     </div>
                     <div class="card-body p-4">
                                                 <form method="POST">
-                                                    {{ form.hidden_tag() }}
-                                                        {% with messages = get_flashed_messages(with_categories=true) %}
+                                                  {% with messages = get_flashed_messages(with_categories=true) %}
                                                             {% if messages %}
                                                                 <div class="mb-3">
                                                                     {% for cat, msg in messages %}
@@ -77,6 +76,7 @@
                                 <button type="submit" class="btn btn-success px-5">Guardar Paciente</button>
                             </div>
                         </form>
+                        {{ form.hidden_tag() }}
                     </div>
                 </div>
             </div>
