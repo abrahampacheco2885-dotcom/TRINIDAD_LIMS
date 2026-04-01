@@ -43,23 +43,25 @@ def nuevo_paciente():
                 db.session.add(nuevo)
                 db.session.commit()
                 
-                # --- ENVÍO A GOOGLE SHEETS ---
+        # --- BLOQUE GOOGLE SHEETS SEGURO ---
                 try:
-                    dict_google = {
+                    from app.sheets_service import enviar_a_sheets
+                    # Solo enviamos texto simple para que Google no se confunda
+                    datos_limpios = {
                         "tipo": "paciente",
-                        "tipo_documento": nuevo.tipo_documento,
-                        "identificacion": nuevo.identificacion,
-                        "nombre": nuevo.nombre,
-                        "apellido": nuevo.apellido,
-                        "genero": nuevo.genero,
+                        "tipo_documento": str(nuevo.tipo_documento),
+                        "identificacion": str(nuevo.identificacion),
+                        "nombre": str(nuevo.nombre),
+                        "apellido": str(nuevo.apellido),
+                        "genero": str(nuevo.genero),
                         "fecha_nacimiento": str(nuevo.fecha_nacimiento),
-                        "telefono": nuevo.telefono,
-                        "email": nuevo.email
+                        "telefono": str(nuevo.telefono),
+                        "email": str(nuevo.email)
                     }
-                    enviar_a_sheets(dict_google, tipo="paciente")
-                except Exception as e_sheets:
-                    print(f"Error en Google Sheets: {e_sheets}")
-                # -----------------------------
+                    enviar_a_sheets(datos_limpios, tipo="paciente")
+                except Exception as e_google:
+                    print(f"⚠️ Error enviando a Google: {e_google}")
+                # ------------------------------------
 
                 flash('Paciente creado correctamente.', 'success')
                 return redirect(url_for('patients.lista_pacientes'))
