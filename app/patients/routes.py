@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from app.patients import patients_bp
 from app.models import Patient, Muestra, SolicitudTest, TestCatalogo
 from app import db
+from app.sheets_service import enviar_a_sheets
 from app.utils.decorators import roles_required
 from datetime import datetime
 from app.forms import PatientForm
@@ -40,7 +41,15 @@ def nuevo_paciente():
             try:
                 db.session.add(nuevo)
                 db.session.commit()
-                flash('Paciente creado correctamente.', 'success')
+                try:
+                db.session.add(nuevo)
+                db.session.commit()
+                
+                # --- SOLO ESTA LÍNEA NUEVA ---
+                enviar_a_sheets(nuevo.__dict__, tipo="paciente") 
+                # -----------------------------
+
+               flash('Paciente creado correctamente.', 'success')
                 return redirect(url_for('patients.lista_pacientes'))
             except Exception as e:
                 db.session.rollback()
