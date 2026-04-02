@@ -5,16 +5,17 @@ from app import db
 from app.utils.decorators import roles_required
 from datetime import datetime
 from app.forms import PatientForm
-from app.sheets_service import enviar_a_sheets # Importación del puente a Google
+from app.sheets_service import enviar_a_sheets
 import os
 
 # 1. RUTA PARA REGISTRAR
 @patients_bp.route('/nuevo', methods=['GET', 'POST'])
 def nuevo_paciente():
     form = PatientForm()
-    if request.method == 'POST':
-        form = PatientForm(request.form)
-        if form.validate():
+    
+    # validate_on_submit ya sabe si es POST y si los datos son válidos
+    if form.validate_on_submit():
+        try:
             tipo_doc = form.tipo_documento.data
             dni_input = (form.dni.data or '').strip()
             nombre = form.nombre.data.strip().upper()
@@ -39,39 +40,39 @@ def nuevo_paciente():
                 email=form.email.data
             )
             
+            db.session.add(nuevo)
+            db.session.commit()
+            
+            # --- BLOQUE GOOGLE SHEETS SEGURO ---
             try:
-                db.session.add(nuevo)
-                db.session.commit()
-                
-        # --- BLOQUE GOOGLE SHEETS SEGURO ---
-                try:
-                    from app.sheets_service import enviar_a_sheets
-                    # Solo enviamos texto simple para que Google no se confunda
-                    datos_limpios = {
-                        "tipo": "paciente",
-                        "tipo_documento": str(nuevo.tipo_documento),
-                        "identificacion": str(nuevo.identificacion),
-                        "nombre": str(nuevo.nombre),
-                        "apellido": str(nuevo.apellido),
-                        "genero": str(nuevo.genero),
-                        "fecha_nacimiento": str(nuevo.fecha_nacimiento),
-                        "telefono": str(nuevo.telefono),
-                        "email": str(nuevo.email)
-                    }
-                    enviar_a_sheets(datos_limpios, tipo="paciente")
-                except Exception as e_google:
-                    print(f"⚠️ Error enviando a Google: {e_google}")
-                # ------------------------------------
+                datos_limpios = {
+                    "tipo": "paciente",
+                    "tipo_documento": str(nuevo.tipo_documento),
+                    "identificacion": str(nuevo.identificacion),
+                    "nombre": str(nuevo.nombre),
+                    "apellido": str(nuevo.apellido),
+                    "genero": str(nuevo.genero),
+                    "fecha_nacimiento": str(nuevo.fecha_nacimiento),
+                    "telefono": str(nuevo.telefono),
+                    "email": str(nuevo.email)
+                }
+                enviar_a_sheets(datos_limpios, tipo="paciente")
+            except Exception as e_google:
+                print(f"⚠️ Error enviando a Google: {e_google}")
+            # ------------------------------------
 
-                flash('Paciente creado correctamente.', 'success')
-                return redirect(url_for('patients.lista_pacientes'))
-            except Exception as e:
-                db.session.rollback()
-                flash('Error al crear paciente: ' + str(e), 'danger')
-        else:
-            for field, errs in form.errors.items():
-                for err in errs:
-                    flash(f"{field}: {err}", 'danger')
+            flash('Paciente creado correctamente.', 'success')
+            return redirect(url_for('patients.lista_pacientes'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('Error al crear paciente: ' + str(e), 'danger')
+    
+    # Si el formulario no es válido, mostramos los errores
+    elif request.method == 'POST':
+        for field, errs in form.errors.items():
+            for err in errs:
+                flash(f"{field}: {err}", 'danger')
 
     return render_template('patients/create.html', form=form)
 
@@ -127,7 +128,7 @@ def crear_orden(patient_id):
 
         db.session.commit()
         
-        # Opcional: Enviar también la orden a Google Sheets
+        # Enviar orden a Google Sheets
         try:
             dict_orden = {
                 "tipo": "orden",
@@ -150,6 +151,11 @@ def anular_paciente(patient_id):
     paciente = Patient.query.get_or_404(patient_id)
     if paciente.anulado:
         flash('Paciente ya está anulado', 'warning')
+        return redirect(url_for('patients.lista_pacientes'))
+    paciente.anulado = True
+    db.session.commit()
+    flash('Paciente marcado como anulado', 'success')
+    return redirect(url_for('patients.lista_pacientes'))
         return redirect(url_for('patients.lista_pacientes'))
     paciente.anulado = True
     db.session.commit()
