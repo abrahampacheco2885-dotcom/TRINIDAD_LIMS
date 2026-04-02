@@ -1,41 +1,48 @@
-from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, login_required
+from flask import render_template, request, redirect, url_for, flash, session
+from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import auth_bp
 from app.models import User
 from app import db
-from app.forms import UserForm
+from app.forms import UserForm, LoginForm # <--- Agregamos LoginForm aquí
 from app.utils.decorators import roles_required
 from app.utils.passwords import validate_password
-from flask import session
-from flask_login import current_user, login_required
-
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+    # Iniciamos el formulario profesional
+    form = LoginForm()
+    
+    # Si el usuario ya está logueado, lo mandamos al inicio
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    # validate_on_submit() revisa el sello CSRF automáticamente
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
         
         user = User.query.filter_by(username=username).first()
         
-        # Verificación segura usando hash
         if user and user.check_password(password):
             login_user(user)
-            # If the user must change password, redirect to change page
+            # Si el usuario debe cambiar clave (must_change_password)
             if getattr(user, 'must_change_password', False):
                 return redirect(url_for('auth.change_password'))
+            
+            flash('¡Bienvenido al sistema!', 'success')
             return redirect(url_for('index'))
         else:
-            flash('Usuario o contraseña incorrectos')
+            flash('Usuario o contraseña incorrectos', 'danger')
     
-    return render_template('auth/login.html')
+    # IMPORTANTE: Aquí pasamos el objeto 'form' al HTML
+    return render_template('auth/login.html', form=form)
 
 @auth_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
-
+    flash('Has cerrado sesión correctamente.', 'info')
+    return redirect(url_for('auth.login'))
 
 # --- Gestión de usuarios (solo admin) ---
 @auth_bp.route('/users')
@@ -45,7 +52,6 @@ def users_list():
     usuarios = User.query.order_by(User.username).all()
     return render_template('auth/users.html', users=usuarios)
 
-
 @auth_bp.route('/users/nuevo', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
@@ -54,7 +60,6 @@ def users_create():
     if request.method == 'POST':
         form = UserForm(request.form)
         if form.validate():
-            # limit admins to maximum 2
             if form.rol.data == 'admin':
                 admin_count = User.query.filter(User.rol.ilike('admin')).count()
                 if admin_count >= 2:
@@ -89,11 +94,9 @@ def users_create():
                     flash(f + ': ' + e, 'danger')
     return render_template('auth/user_create.html', form=form)
 
-
 @auth_bp.route('/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():
-    # Simple change password form without WTForms for minimal footprint
     if request.method == 'POST':
         current_password = request.form.get('current_password')
         new_password = request.form.get('new_password')
@@ -115,13 +118,11 @@ def change_password():
         return redirect(url_for('index'))
     return render_template('auth/change_password.html')
 
-
 @auth_bp.route('/users/borrar/<int:id>', methods=['POST'])
 @login_required
 @roles_required('admin')
 def users_delete(id):
     u = User.query.get_or_404(id)
-    # prevent deleting last admin or exceed limit rules
     if u.rol and u.rol.lower() == 'admin':
         admin_count = User.query.filter(User.rol.ilike('admin')).count()
         if admin_count <= 1:
