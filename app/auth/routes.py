@@ -126,3 +126,4 @@ def users_delete(id):
     return redirect(url_for('auth.users_list'))
     flash('Usuario borrado', 'success')
     return redirect(url_for('auth.users_list'))
+    return render_template('auth/login.html', form=form)
