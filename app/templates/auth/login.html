@@ -3,21 +3,23 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-4">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h3 class="text-center mb-4">Iniciar Sesión</h3>
-                    <form method="POST" action="{{ url_for('auth.login') }}">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4>NEXUS LIMS</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
                         {{ form.hidden_tag() }}
                         <div class="mb-3">
                             <label class="form-label">Usuario</label>
-                            {{ form.username(class="form-control", placeholder="Tu usuario") }}
+                            {{ form.username(class="form-control", placeholder="usuario123") }}
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Contraseña</label>
                             {{ form.password(class="form-control", placeholder="********") }}
                         </div>
                         <div class="d-grid">
-                            {{ form.submit(class="btn btn-primary") }}
+                            {{ form.submit(class="btn btn-primary btn-block") }}
                         </div>
                     </form>
                 </div>
