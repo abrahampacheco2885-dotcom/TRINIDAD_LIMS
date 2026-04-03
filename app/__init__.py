@@ -5,8 +5,8 @@ from config import Config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
-login_manager.login_view = 'auth.login' # Redirige aquí si no hay sesión
-login_manager.login_message = "Por favor, inicia sesión para acceder."
+login_manager.login_view = 'auth.login'
+login_manager.login_message = "Inicia sesión para continuar."
 login_manager.login_message_category = "info"
 
 def create_app():
@@ -16,19 +16,24 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
 
+    # El cargador de usuario para Flask-Login
     from app.models import User
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # Registro de Blueprints
-    from app.auth import auth_bp
+    # Importamos y registramos los Blueprints
+    from app.auth.routes import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
-    from app.patients import patients_bp
+    from app.patients.routes import patients_bp
     app.register_blueprint(patients_bp, url_prefix='/pacientes')
 
-    from app.main import main_bp
-    app.register_blueprint(main_bp)
+    # Si tienes un archivo app/main/routes.py, regístralo aquí. 
+    # Si no, podemos redirigir la raíz al login temporalmente.
+    @app.route('/')
+    def index():
+        from flask import redirect, url_for
+        return redirect(url_for('auth.login'))
 
     return app
