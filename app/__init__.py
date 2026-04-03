@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -9,12 +10,13 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-
-    # --- CONFIGURACIÓN DE SESIÓN PARA RENDER ---
+    
+    # Configuración crítica para que Render (HTTPS) acepte la sesión
     app.config.update(
-        SESSION_COOKIE_SECURE=True,    # Obligatorio para HTTPS de Render
+        SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE='Lax', # Permite redirecciones estables
+        SESSION_COOKIE_SAMESITE='Lax',
+        SECRET_KEY=os.environ.get('SECRET_KEY', 'clave-segura-temporal')
     )
 
     db.init_app(app)
@@ -26,6 +28,7 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    # Registro de rutas
     from app.auth.routes import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
