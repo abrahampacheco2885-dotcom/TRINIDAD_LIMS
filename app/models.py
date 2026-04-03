@@ -1,6 +1,7 @@
 from app import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -16,7 +17,19 @@ class User(UserMixin, db.Model):
 
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    tipo_documento = db.Column(db.String(5), default='V')
+    identificacion = db.Column(db.String(20), nullable=False)
     nombre = db.Column(db.String(100), nullable=False)
-    cedula = db.Column(db.String(20), nullable=False)
-    email = db.Column(db.String(100))
+    apellido = db.Column(db.String(100), nullable=False)
+    genero = db.Column(db.String(10))
+    fecha_nacimiento = db.Column(db.Date)
     telefono = db.Column(db.String(20))
+    email = db.Column(db.String(100))
+    anulado = db.Column(db.Boolean, default=False)
+
+    def get_edad(self):
+        if self.fecha_nacimiento:
+            from datetime import date
+            today = date.today()
+            return today.year - self.fecha_nacimiento.year - ((today.month, today.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day))
+        return "N/A"
