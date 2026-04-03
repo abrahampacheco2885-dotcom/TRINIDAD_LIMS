@@ -1,161 +1,53 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_required
 from app.patients import patients_bp
-from app.models import Patient, Muestra, SolicitudTest, TestCatalogo
+from app.models import Patient
 from app import db
-from app.utils.decorators import roles_required
-from datetime import datetime
 from app.forms import PatientForm
 from app.sheets_service import enviar_a_sheets
-import os
+from datetime import datetime
 
-# 1. RUTA PARA REGISTRAR
 @patients_bp.route('/nuevo', methods=['GET', 'POST'])
+@login_required # <--- Nadie entra sin login
 def nuevo_paciente():
     form = PatientForm()
-    
-    # validate_on_submit ya sabe si es POST y si los datos son válidos
     if form.validate_on_submit():
+        nuevo = Patient(
+            tipo_documento=form.tipo_documento.data,
+            identificacion=form.dni.data,
+            nombre=form.nombre.data.upper(),
+            apellido=form.apellido.data.upper(),
+            genero=form.genero.data,
+            fecha_nacimiento=form.fecha_nacimiento.data,
+            telefono=form.telefono.data,
+            email=form.email.data
+        )
         try:
-            tipo_doc = form.tipo_documento.data
-            dni_input = (form.dni.data or '').strip()
-            nombre = form.nombre.data.strip().upper()
-            apellido = form.apellido.data.strip().upper()
-            genero = form.genero.data
-            f_nac = form.fecha_nacimiento.data
-
-            # Generar ID automático si es N o RN
-            identificacion_final = dni_input
-            if not dni_input or tipo_doc in ['RN', 'N']:
-                timestamp = datetime.now().strftime('%H%M%S')
-                identificacion_final = f"{tipo_doc}-{apellido}-{timestamp}"
-
-            nuevo = Patient(
-                tipo_documento=tipo_doc,
-                identificacion=identificacion_final,
-                nombre=nombre,
-                apellido=apellido,
-                genero=genero,
-                fecha_nacimiento=f_nac,
-                telefono=form.telefono.data,
-                email=form.email.data
-            )
-            
             db.session.add(nuevo)
             db.session.commit()
-            
-            # --- BLOQUE GOOGLE SHEETS SEGURO ---
-            try:
-                datos_limpios = {
-                    "tipo": "paciente",
-                    "tipo_documento": str(nuevo.tipo_documento),
-                    "identificacion": str(nuevo.identificacion),
-                    "nombre": str(nuevo.nombre),
-                    "apellido": str(nuevo.apellido),
-                    "genero": str(nuevo.genero),
-                    "fecha_nacimiento": str(nuevo.fecha_nacimiento),
-                    "telefono": str(nuevo.telefono),
-                    "email": str(nuevo.email)
-                }
-                enviar_a_sheets(datos_limpios, tipo="paciente")
-            except Exception as e_google:
-                print(f"⚠️ Error enviando a Google: {e_google}")
-            # ------------------------------------
 
-            flash('Paciente creado correctamente.', 'success')
+            # Enviar a Google Sheets
+            datos = {
+                "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                "paciente": f"{nuevo.nombre} {nuevo.apellido}",
+                "id": f"{nuevo.tipo_documento}-{nuevo.identificacion}",
+                "telefono": nuevo.telefono
+            }
+            enviar_a_sheets(datos, tipo="paciente")
+
+            flash('Paciente registrado y sincronizado con Google Sheets', 'success')
             return redirect(url_for('patients.lista_pacientes'))
-
         except Exception as e:
             db.session.rollback()
-            flash('Error al crear paciente: ' + str(e), 'danger')
-    
-    # Si el formulario no es válido, mostramos los errores
-    elif request.method == 'POST':
-        for field, errs in form.errors.items():
-            for err in errs:
-                flash(f"{field}: {err}", 'danger')
-
+            flash(f'Error: {str(e)}', 'danger')
+            
     return render_template('patients/create.html', form=form)
 
-
-@patients_bp.route('/')
-def patients_index():
-    return redirect(url_for('patients.lista_pacientes'))
-
-
-@patients_bp.route('/list')
-def patients_list_alias():
-    return redirect(url_for('patients.lista_pacientes'))
-
-# 2. RUTA PARA LA LISTA
 @patients_bp.route('/lista')
+@login_required
 def lista_pacientes():
-    q = request.args.get('q', '').strip()
-    try:
-        page = int(request.args.get('page', 1))
-    except ValueError:
-        page = 1
-    per_page = 10
-
-    query = Patient.query.filter(Patient.anulado == False)
-    if q:
-        like = f"%{q}%"
-        query = query.filter((Patient.nombre.ilike(like)) | (Patient.apellido.ilike(like)) | (Patient.identificacion.ilike(like)))
-
-    pagination = query.order_by(Patient.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
-    pacientes = pagination.items
-    return render_template('patients/list.html', pacientes=pacientes, pagination=pagination, q=q)
-
-# 3. RUTA PARA CREAR LA ORDEN
-@patients_bp.route('/crear_orden/<int:patient_id>', methods=['GET', 'POST'])
-def crear_orden(patient_id):
-    paciente = Patient.query.get_or_404(patient_id)
-    examenes_disponibles = TestCatalogo.query.all()
-
-    if request.method == 'POST':
-        codigo = f"ORD-{paciente.identificacion}-{datetime.now().strftime('%M%S')}"
-        nueva_muestra = Muestra(codigo_unico=codigo, paciente_id=paciente.id)
-        db.session.add(nueva_muestra)
-        db.session.flush() 
-
-        tests_seleccionados = request.form.getlist('tests')
-        for test_id in tests_seleccionados:
-            nueva_solicitud = SolicitudTest(
-                muestra_id=nueva_muestra.id, 
-                test_id=int(test_id),
-                estado='PENDIENTE'
-            )
-            db.session.add(nueva_solicitud)
-
-        db.session.commit()
-        
-        # Enviar orden a Google Sheets
-        try:
-            dict_orden = {
-                "tipo": "orden",
-                "identificacion": paciente.identificacion,
-                "nombre_completo": f"{paciente.nombre} {paciente.apellido}",
-                "examenes": ", ".join(tests_seleccionados)
-            }
-            enviar_a_sheets(dict_orden, tipo="orden")
-        except:
-            pass
-
-        return redirect(url_for('patients.lista_pacientes'))
-
-    return render_template('patients/crear_orden.html', paciente=paciente, examenes=examenes_disponibles)
-
-
-@patients_bp.route('/anular/<int:patient_id>', methods=['POST'])
-@roles_required('bioanalista', 'admin')
-def anular_paciente(patient_id):
-    paciente = Patient.query.get_or_404(patient_id)
-    if paciente.anulado:
-        flash('Paciente ya está anulado', 'warning')
-        return redirect(url_for('patients.lista_pacientes'))
-    paciente.anulado = True
-    db.session.commit()
-    flash('Paciente marcado como anulado', 'success')
-    return redirect(url_for('patients.lista_pacientes'))
+    pacientes = Patient.query.order_by(Patient.created_at.desc()).all()
+    return render_template('patients/list.html', pacientes=pacientes)
         return redirect(url_for('patients.lista_pacientes'))
     paciente.anulado = True
     db.session.commit()
