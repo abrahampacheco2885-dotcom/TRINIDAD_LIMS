@@ -18,7 +18,7 @@ def login():
             login_user(user, remember=True)
             return redirect(url_for('patients.lista_pacientes'))
         else:
-            flash('Usuario o contraseña incorrectos', 'danger')
+            flash('Usuario o clave incorrectos', 'danger')
             
     return render_template('auth/login.html', form=form)
 
