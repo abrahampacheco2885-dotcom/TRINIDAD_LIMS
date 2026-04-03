@@ -8,15 +8,17 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # Si ya está logueado, lo mandamos al menú principal (index)
     if current_user.is_authenticated:
-        return redirect(url_for('patients.lista_pacientes'))
+        return redirect(url_for('index'))
     
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=True)
-            return redirect(url_for('patients.lista_pacientes'))
+            # CAMBIO CLAVE: Redirigir a la pantalla de selección (index)
+            return redirect(url_for('index'))
         else:
             flash('Usuario o clave incorrectos', 'danger')
             
