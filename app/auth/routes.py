@@ -8,18 +8,23 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # Si ya está logueado, mándalo directo a la lista de pacientes
     if current_user.is_authenticated:
         return redirect(url_for('patients.lista_pacientes'))
     
     form = LoginForm()
+    
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
+        
         if user and user.check_password(form.password.data):
-            login_user(user)
-            flash('Acceso concedido. Bienvenido.', 'success')
-            return redirect(url_for('patients.lista_pacientes'))
+            login_user(user, remember=True) # El 'remember' ayuda a mantener la sesión
+            flash('¡Acceso exitoso!', 'success')
+            # Forzamos la ruta manual para que no haya pérdida
+            return redirect('/pacientes/lista') 
         else:
             flash('Usuario o clave incorrectos.', 'danger')
+            
     return render_template('auth/login.html', form=form)
 
 @auth_bp.route('/logout')
